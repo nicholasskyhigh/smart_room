@@ -56,6 +56,11 @@ void setup() {
   button1.attachLongPressStart(button1longpressstart);
   button2.attachLongPressStart(button2longpressstart);
   restrt();
+  unsigned status;
+  status = bme.begin(0x76, &Wire);
+    if (!status) {
+      Serial.print("Bme error");
+    }
   Serial.println("Ready");
 
   
@@ -161,7 +166,7 @@ void poscheck() {          //checks the position of the encoder
 }
 
 
-void checks() {
+void checks() { //used to check the state & clarify it, also ran in void loop, allowing it to function properly
   if (changebright == true) {
     brightchange();
   }
@@ -178,10 +183,23 @@ void checks() {
   }
 
   if (Mode2 == true) {
+    float tempc;      //bme reads in celsius
+    float tempf;
+    int circle;     //variable for map
+    int i2;         //variable for mode2
     Mode1 = false;
     Mode3 = false;
-     pixels.clear();
-    pixels.show();
+    tempc = bme.readTemperature();
+    
+    tempf = (tempc *9 / 5 + 32);
+    circle = map(tempf, 70, 76,0,6);
+    for (i2 = 0; i2 <12 ; i2++) {
+    pixels.setPixelColor(i2,mycolors[circle]);
+    }
+//    Serial.println(circle);
+//    Serial.println(tempf);
+    colorselect = HueRainbow[circle];
+        pixels.show();
   }
 
 
@@ -189,7 +207,7 @@ void checks() {
 
   
   if (Mode3 == true) {
-    int i3;
+    int i3;  //variable for mode3
     int s = map(pos, 0,96,0,5);
     for (i3=0; i3<12; i3++) {
       pixels.setPixelColor(i3,mycolors[s]);
