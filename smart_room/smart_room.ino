@@ -102,34 +102,38 @@ void button1click() {
   color = colorselect;
   Serial.print(color);
   display.display();
+  delay(750);
 }
 
 void button1doubleclick() {
   changebright = !changebright;
-  if (changebright == true) {
-    display.clearDisplay();
-    display.setCursor(0,0);
-    display.print ("Brightness changed to: ");
-    display.println(Brightness);
-    display.display();
-  }
+
   Serial.print("Brightness change: ");
   Serial.println(Brightness);
   pixels.clear();
   pixels.show();
-  
 }
 
 void button2click() { 
   lightpush();
+  display.clearDisplay();
+  display.display();
+  display.setCursor(0,0);
+  display.println ("LIGHTS PUSHED!");
+  display.display();
   Serial.println("lightsPushed: ");
   if (lightnumber  == 0) {
-    Serial.print("no lights on");
+  Serial.print("no lights on");cf
   }
+  delay(1000);
 }
 
 void button2doubleclick() { // changes the mode
-
+  display.clearDisplay();
+  display.display();
+  display.setCursor(0,0);
+  display.println (_state);
+  display.display();
   switch (_state) {
     case mode1:
     
@@ -166,16 +170,27 @@ void button2doubleclick() { // changes the mode
 
 
 void button1longpressstart() {
+  display.clearDisplay();
+  display.display();
+  display.setCursor(0,0);
+  display.println("Number of lights on");
+  display.print (lightnumber);
+  display.display();
   lightnumber = lightnumber +1;
   
   Serial.print("lightnumber: ");
-  Serial.println(lightnumber);
+  Serial.println(lightnumber);  
+  delay(1000);
 }
 
 void button2longpressstart() { // turns lights on/off state 0 = off
   lights = !lights;
-  Serial.print("on:state ");
-  Serial.println(lights);
+ display.clearDisplay();
+  display.display();
+  display.setCursor(0,0);
+  display.println("Lights on/off");
+  display.display();
+  delay(1000);
 }
 
 void brightchange() { //activated with button1 double click to change brightness
@@ -187,6 +202,17 @@ void brightchange() { //activated with button1 double click to change brightness
   Brightness = map(pos, 0,96,0,255);
   pixels.setBrightness(Brightness);
   pixels.show();
+    if (changebright == true) {
+    display.clearDisplay();
+    display.setCursor(0,0);
+    display.print ("Brightness changed to ");
+    display.println(Brightness);
+    display.display();
+  }
+  else {
+    display.clearDisplay();
+    display.display();
+  }
   }
 
 
@@ -204,10 +230,23 @@ void checks() { //used to check the state & clarify it, also ran in void loop, a
     
   
   if (Mode1 == true) {
+    if(changebright == false){
+       display.clearDisplay();
+    display.display();
+    display.setCursor(0,0);
+    display.print ("Mode: ");
+    display.println (_state);
+    display.print ("X Value = ");
+    display.println (AcX);
+    display.display();
+    }
+      
     Mode2 = false;
     Mode3 = false;
     int i1;
     int rotate;
+    
+   
     Wire.beginTransmission(MPU);
     Wire.write(0x3B);  
     Wire.endTransmission(false);
@@ -250,6 +289,10 @@ void checks() { //used to check the state & clarify it, also ran in void loop, a
     int i2;         //variable for mode2
     Mode1 = false;
     Mode3 = false;
+
+   
+
+    
     tempc = bme.readTemperature();
     
     tempf = (tempc *9 / 5 + 32);
@@ -258,9 +301,20 @@ void checks() { //used to check the state & clarify it, also ran in void loop, a
     pixels.setPixelColor(i2,mycolors[circle]);
     }
 //    Serial.println(circle);
-  Serial.println(tempf);
+  
     colorselect = HueRainbow[circle];
-        pixels.show();
+        pixels.show(); 
+    if(changebright == false){
+      display.clearDisplay();
+    display.display();
+    display.setCursor(0,0);
+    display.print ("Mode: ");
+    display.println (_state);
+    display.print ("Temp = ");
+    display.println (tempf);
+    display.display();
+    }
+    
   }
 
 
@@ -270,6 +324,18 @@ void checks() { //used to check the state & clarify it, also ran in void loop, a
   if (Mode3 == true) {
     int i3;  //variable for mode3
     int s = map(pos, 0,96,0,5);
+
+    if(changebright == false){
+       display.clearDisplay();
+    display.display();
+    display.setCursor(0,0);
+    display.print ("Mode: ");
+    display.println (_state);
+    display.print ("Color = ");
+    display.println (s);
+    display.display();
+    }
+   
     for (i3=0; i3<12; i3++) {
       pixels.setPixelColor(i3,mycolors[s]);
     }
