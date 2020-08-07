@@ -13,11 +13,15 @@
 #include <Wire.h>
 #include <Adafruit_Sensor.h>
 #include <Adafruit_BME280.h>
+#include <Adafruit_SSD1306.h>
+#include <Adafruit_GFX.h>
 
 const int upper = 2;  //button1 
 const int lower = 3;  //button2
 const int A = 23;     //Wire for encoder
 const int B = 22;     //Wire 2 for encoder
+const int MPU=0x68;   //gyroscope although it appears accellerometer readings are actually gryo readings
+int16_t AcX,AcY,AcZ,Tmp,GyX,GyY,GyZ; //the adresses for the gyro/accel. output
 int lightnumber = 0;  // bulb number 1-5 and sets it to 0
 int Brightness;       //brightness number 0-255 set by encoder
 bool lights = false;  //boolean to turn the lights on or off
@@ -39,12 +43,23 @@ IPAddress ip(192,168,1,3);
 OneButton button1(upper, false);
 OneButton button2(lower, false);
 Encoder myEnc(B,A);
+Adafruit_SSD1306 display = Adafruit_SSD1306(128, 32, &Wire);
+
+
 void setup() {
   
 
   Serial.begin(9600);
   Ethernet.begin(mac,ip);
   pixels.begin();
+  display.begin(SSD1306_SWITCHCAPVCC, 0x3C);
+  display.display();
+  delay(50);
+  display.clearDisplay();
+  display.display();
+  display.setTextSize(1);
+  display.setTextColor(SSD1306_WHITE);
+  display.setCursor(0,0);
   pixels.clear();
   Serial.print("LinkStatus: ");
   Serial.println(Ethernet.linkStatus());
@@ -56,6 +71,11 @@ void setup() {
   button1.attachLongPressStart(button1longpressstart);
   button2.attachLongPressStart(button2longpressstart);
   restrt();
+  Wire.begin();
+  Wire.beginTransmission(MPU);
+  Wire.write(0x6B); 
+  Wire.write(0);    
+  Wire.endTransmission(true);
   unsigned status;
   status = bme.begin(0x76, &Wire);
     if (!status) {
@@ -76,13 +96,23 @@ void loop() {
 }
  
 void button1click() {
-
+  display.clearDisplay();
+  display.setCursor(0,0);
+  display.print ("Color Selected");
   color = colorselect;
   Serial.print(color);
+  display.display();
 }
 
 void button1doubleclick() {
   changebright = !changebright;
+  if (changebright == true) {
+    display.clearDisplay();
+    display.setCursor(0,0);
+    display.print ("Brightness changed to: ");
+    display.println(Brightness);
+    display.display();
+  }
   Serial.print("Brightness change: ");
   Serial.println(Brightness);
   pixels.clear();
@@ -176,11 +206,42 @@ void checks() { //used to check the state & clarify it, also ran in void loop, a
   if (Mode1 == true) {
     Mode2 = false;
     Mode3 = false;
-    pixels.clear();
-    pixels.setBrightness(Brightness);
-    pixels.setPixelColor(2, blue);
-    pixels.show();
-  }
+    int i1;
+    int rotate;
+    Wire.beginTransmission(MPU);
+    Wire.write(0x3B);  
+    Wire.endTransmission(false);
+    Wire.requestFrom(MPU,12,true);  
+    AcX=Wire.read()<<8|Wire.read();    
+
+    if (AcX > -15000) {
+      rotate = 0;
+    }
+    if (AcX > -9000) {
+      rotate = 1 ;
+    }
+    if (AcX > -4500) {
+      rotate = 2;
+    }
+    if (AcX > 0 ) {
+      rotate = 3;
+    }
+    if (AcX > 4000) {
+      rotate = 4;
+    }
+    if (AcX > 9000) {
+      rotate = 5;
+    }
+    if (AcX > 14000) {
+      rotate = 6;
+    }
+    
+     for (i1 = 0; i1<12 ; i1++) {
+      pixels.setPixelColor(i1,mycolors[rotate]);
+     }
+     pixels.show();
+     colorselect = HueRainbow[rotate];
+    }
 
   if (Mode2 == true) {
     float tempc;      //bme reads in celsius
@@ -192,12 +253,12 @@ void checks() { //used to check the state & clarify it, also ran in void loop, a
     tempc = bme.readTemperature();
     
     tempf = (tempc *9 / 5 + 32);
-    circle = map(tempf, 70, 76,0,6);
+    circle = map(tempf, 80, 90,0,6);
     for (i2 = 0; i2 <12 ; i2++) {
     pixels.setPixelColor(i2,mycolors[circle]);
     }
 //    Serial.println(circle);
-//    Serial.println(tempf);
+  Serial.println(tempf);
     colorselect = HueRainbow[circle];
         pixels.show();
   }
@@ -273,4 +334,6 @@ void restrt() {
     setHue(5, false, color, Brightness);
     pixels.clear();
     pixels.show();
+    display.clearDisplay();
+    display.display();
 }
